@@ -47,7 +47,7 @@ namespace NonlinearEquationSolution.Infrastructure.Solvers
             );
         }
 
-        private double CalculateOptimalTau(IEquation equation, double a, double b)
+        private static double CalculateOptimalTau(IEquation equation, double a, double b)
         {
             double m1 = Math.Abs(equation.Derivative(a));
             double M1 = Math.Abs(equation.Derivative(b));
@@ -56,7 +56,7 @@ namespace NonlinearEquationSolution.Infrastructure.Solvers
         }
 
         // TODO: Implement this method to estimate the number of iterations a priori
-        private int EstimateAprioriIterations(IEquation equation, ProblemDefinition problem, double tau, double epsilon)
+        private static int EstimateAprioriIterations(IEquation equation, ProblemDefinition problem, double tau, double epsilon)
         {
             throw new NotImplementedException();
         }
