@@ -59,7 +59,7 @@ namespace NonlinearEquationSolution.Infrastructure.Solvers
         }
 
         // TODO: Implement this method to estimate the number of iterations a priori
-        private static int EstimateAprioriIterations(IEquation equation, ProblemDefinition problem, double tau, double epsilon)
+        private static int EstimateAprioriIterations(IEquation equation, ProblemDefinition problem, double epsilon)
         {
             throw new NotImplementedException();
         }
