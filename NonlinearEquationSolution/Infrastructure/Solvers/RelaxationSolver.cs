@@ -13,6 +13,9 @@ namespace NonlinearEquationSolution.Infrastructure.Solvers
             double tau = CalculateOptimalTau(equation, problem.A, problem.B);
             double xPrev = problem.RelaxationInitialGuess;
 
+            // int aprioriIterations = EstimateAprioriIterations(equation, problem, tau, epsilon);
+            int aprioriIterations = -1; // TODO Implement this method
+
             int iterations = 0;
 
             while (iterations < MaxIterations)
@@ -28,9 +31,9 @@ namespace NonlinearEquationSolution.Infrastructure.Solvers
                         MethodName,
                         xNext,
                         iterations,
-                        EstimateAprioriIterations(equation, problem, tau, epsilon), // TODO Implement this method
+                        aprioriIterations,
                         epsilon,
-                        $"Converged in {iterations} iterations with tau = {tau:F6}"
+                        $"tau = {tau:F6}"
                     );
                 }
 
@@ -41,7 +44,7 @@ namespace NonlinearEquationSolution.Infrastructure.Solvers
                 MethodName,
                 double.NaN,
                 iterations,
-                EstimateAprioriIterations(equation, problem, tau, epsilon), // TODO Implement this method
+                aprioriIterations,
                 epsilon,
                 "Maximum iterations reached without convergence"
             );
