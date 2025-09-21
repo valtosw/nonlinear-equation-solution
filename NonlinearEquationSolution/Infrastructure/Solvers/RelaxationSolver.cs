@@ -13,8 +13,7 @@ namespace NonlinearEquationSolution.Infrastructure.Solvers
             double tau = CalculateOptimalTau(equation, problem.A, problem.B);
             double xPrev = problem.RelaxationInitialGuess;
 
-            // int aprioriIterations = EstimateAprioriIterations(equation, problem, tau, epsilon);
-            int aprioriIterations = -1; // TODO Implement this method
+            int aprioriIterations = EstimateAprioriIterations(equation, problem, epsilon);
 
             int iterations = 0;
 
