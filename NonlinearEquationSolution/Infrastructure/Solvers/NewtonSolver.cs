@@ -3,17 +3,55 @@ using NonlinearEquationSolution.Core.Interfaces;
 
 namespace NonlinearEquationSolution.Infrastructure.Solvers
 {
-    public class NewtonSolver : IEquationSolver
+    public class NewtonSolver : AbstractSolver
     {
-        private const int MaxIterations = 1000;
-        public string MethodName => "Newton's method";
+        public override string MethodName => "Newton's method";
 
-        public SolverResult Solve(IEquation equation, ProblemDefinition problem, double epsilon)
+        protected override double GetInitialGuess(ProblemDefinition problem) => problem.NewtonInitialGuess;
+
+        // TODO: Fix convergence conditions check for x = -1
+        protected override string PerformConvergenceCheck(IEquation equation, ProblemDefinition problem)
         {
-            string convergenceMessage = CheckConvergenceConditions(equation, problem);
-            double xPrev = problem.NewtonInitialGuess;
+            var messages = new List<string>();
 
-            int aprioriIterations = EstimateAprioriIterations(equation, problem, epsilon);
+            var (A, B) = (problem.A, problem.B);
+            double x0 = GetInitialGuess(problem);
+
+            if (equation.Function(x0) * equation.SecondDerivative(x0) <= 0)
+                messages.Add("f(x0) * f''(x0) <= 0, convergence not guaranteed.");
+
+
+            var (m1, _) = EquationAnalysis.GetMinMaxAbsFirstDerivative(equation, A, B);
+            var (_, M2) = EquationAnalysis.GetMinMaxAbsSecondDerivative(equation, A, B);
+
+            double initialError = B - A;
+
+            double q = (M2 * initialError) / (2 * m1);
+
+            if (q >= 1)
+                messages.Add("q >= 1, convergence not guaranteed.");
+
+            return messages.Count == 0 ? "Convergence conditions satisfied." : string.Join("; ", messages);
+        }
+
+        protected override int PerformAprioriEstimation(IEquation equation, ProblemDefinition problem, double epsilon)
+        {
+            var (A, B) = (problem.A, problem.B);
+            var (m1, _) = EquationAnalysis.GetMinMaxAbsFirstDerivative(equation, A, B);
+            var (_, M2) = EquationAnalysis.GetMinMaxAbsSecondDerivative(equation, A, B);
+            var initialGuess = GetInitialGuess(problem);
+
+            double initialError = Math.Max(Math.Abs(initialGuess - A), Math.Abs(initialGuess - B));
+            double q = (M2 * initialError) / (2 * m1);
+
+            double temp = Math.Log(initialError / epsilon) / Math.Log(1 / q);
+
+            return (int)Math.Floor(Math.Log2(temp + 1)) + 1;
+        }
+
+        protected override (double? root, int iterations) RunIterationProcess(IEquation equation, ProblemDefinition problem, double epsilon)
+        {
+            double xPrev = GetInitialGuess(problem);
 
             int iterations = 0;
 
@@ -25,93 +63,13 @@ namespace NonlinearEquationSolution.Infrastructure.Solvers
 
                 if (Math.Abs(xNext - xPrev) < epsilon)
                 {
-                    return new SolverResult(
-                        MethodName,
-                        xNext,
-                        iterations,
-                        aprioriIterations,
-                        epsilon,
-                        convergenceMessage
-                    );
+                    return (xNext, iterations);
                 }
 
                 xPrev = xNext;
             }
 
-            return new SolverResult(
-                MethodName,
-                double.NaN,
-                iterations,
-                aprioriIterations, 
-                epsilon,
-                "Maximum iterations reached without convergence"
-            );
-        }
-
-        // TODO: Fix convergence conditions check for x = -1
-        private static string CheckConvergenceConditions(IEquation equation, ProblemDefinition problem)
-        {
-            var messages = new List<string>();
-
-            double x0 = problem.NewtonInitialGuess;
-
-            if (equation.Function(x0) * equation.SecondDerivative(x0) <= 0)
-            {
-                messages.Add("f(x0) * f''(x0) <= 0, convergence not guaranteed.");
-            }
-
-            (double A, double B) = (problem.A, problem.B);
-
-            var (m1, _) = GetMinMaxAbsForQuadratic(equation.Derivative, A, B);
-            var (_, M2) = GetMinMaxAbsForLinear(equation.SecondDerivative, A, B);
-
-            double initialError = B - A;
-
-            double q = (M2 * initialError) / (2 * m1);
-
-            if (q >= 1)
-            {
-                messages.Add("q >= 1, convergence not guaranteed.");
-            }
-
-            return messages.Count == 0 ? "Convergence conditions satisfied." : string.Join("; ", messages);
-        }
-
-        private static (double min, double max) GetMinMaxAbsForQuadratic(Func<double, double> quadFunc, double a, double b)
-        {
-            const double vertexX = -1.0;
-
-            var poinstTocheck = new List<double> { a, b };
-
-            if (a < vertexX && vertexX < b)
-            {
-                poinstTocheck.Add(vertexX);
-            }
-
-            var values = poinstTocheck.Select(p => Math.Abs(quadFunc(p)));
-
-            return (values.Min(), values.Max());
-        }
-
-        private static (double min, double max) GetMinMaxAbsForLinear(Func<double, double> linearFunc, double a, double b)
-        {
-            double valA = Math.Abs(linearFunc(a));
-            double valB = Math.Abs(linearFunc(b));
-
-            return (Math.Min(valA, valB), Math.Max(valA, valB));
-        }
-
-        private static int EstimateAprioriIterations(IEquation equation, ProblemDefinition problem, double epsilon)
-        {
-            double m1 = Math.Min(Math.Abs(equation.Derivative(problem.A)), Math.Abs(equation.Derivative(problem.B)));
-            double M2 = Math.Max(Math.Abs(equation.SecondDerivative(problem.A)), Math.Abs(equation.SecondDerivative(problem.B)));
-
-            double initialError = Math.Max(Math.Abs(problem.NewtonInitialGuess - problem.A), Math.Abs(problem.NewtonInitialGuess - problem.B));
-            double q = (M2 * initialError) / (2 * m1);
-
-            double temp = Math.Log(initialError / epsilon) / Math.Log(1 / q);
-
-            return (int)Math.Floor(Math.Log2(temp + 1)) + 1;
+            return (null, MaxIterations);
         }
     }
 }

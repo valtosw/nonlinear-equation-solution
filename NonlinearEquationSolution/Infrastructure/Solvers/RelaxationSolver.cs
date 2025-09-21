@@ -3,18 +3,44 @@ using NonlinearEquationSolution.Core.Interfaces;
 
 namespace NonlinearEquationSolution.Infrastructure.Solvers
 {
-    public class RelaxationSolver : IEquationSolver
+    public class RelaxationSolver : AbstractSolver
     {
-        private const int MaxIterations = 1000;
-        public string MethodName => "Relaxation Method";
+        public override string MethodName => "Relaxation Method";
 
-        public SolverResult Solve(IEquation equation, ProblemDefinition problem, double epsilon)
+        protected override double GetInitialGuess(ProblemDefinition problem) => problem.RelaxationInitialGuess;
+
+        protected override string PerformConvergenceCheck(IEquation equation, ProblemDefinition problem)
         {
-            string convergenceMessage = CheckConvergenceConditions(equation, problem);
-            double tau = CalculateOptimalTau(equation, problem.A, problem.B);
-            double xPrev = problem.RelaxationInitialGuess;
+            var (m1, M1) = EquationAnalysis.GetMinMaxAbsFirstDerivative(equation, problem.A, problem.B);
 
-            int aprioriIterations = EstimateAprioriIterations(equation, problem, epsilon);
+            return (0 < m1) && (m1 < M1) ? "Convergence conditions satisfied." : "0 > m1 or m1 > M1, convergence not guaranteed.";
+        }
+
+        protected override int PerformAprioriEstimation(IEquation equation, ProblemDefinition problem, double epsilon)
+        {
+            var (A, B) = (problem.A, problem.B);
+            var (m1, M1) = EquationAnalysis.GetMinMaxAbsFirstDerivative(equation, A, B);
+
+            if (m1 + M1 <= 0)
+                return -1;
+
+            double q0 = (M1 - m1) / (M1 + m1);
+
+            if (q0 >= 1 || q0 <= 0)
+                return -1;
+
+            double initialError = Math.Max(Math.Abs(problem.RelaxationInitialGuess - A), Math.Abs(problem.RelaxationInitialGuess - B));
+
+            double temp = Math.Log(initialError / epsilon) / Math.Log(1 / q0);
+
+            return (int)Math.Floor(temp) + 1;
+        }
+
+        protected override (double? root, int iterations) RunIterationProcess(IEquation equation, ProblemDefinition problem, double epsilon)
+        {
+            double tau = CalculateOptimalTau(equation, problem.A, problem.B);
+
+            double xPrev = GetInitialGuess(problem);
 
             int iterations = 0;
 
@@ -27,80 +53,20 @@ namespace NonlinearEquationSolution.Infrastructure.Solvers
 
                 if (Math.Abs(xNext - xPrev) < epsilon)
                 {
-                    return new SolverResult(
-                        MethodName,
-                        xNext,
-                        iterations,
-                        aprioriIterations,
-                        epsilon,
-                        convergenceMessage
-                    );
+                    return (xNext, iterations);
                 }
 
                 xPrev = xNext;
             }
 
-            return new SolverResult(
-                MethodName,
-                double.NaN,
-                iterations,
-                aprioriIterations,
-                epsilon,
-                "Maximum iterations reached without convergence"
-            );
-        }
-
-        private static string CheckConvergenceConditions(IEquation equation, ProblemDefinition problem)
-        {
-            var (m1, M1) = GetMinMaxAbsForQuadratic(equation.Derivative, problem.A, problem.B);
-
-            return (0 < m1) && (m1 < M1) ? "Convergence conditions satisfied." : "0 > m1 or m1 > M1, convergence not guaranteed.";
+            return (null, MaxIterations);
         }
 
         private static double CalculateOptimalTau(IEquation equation, double a, double b)
         {
-            var (m1, M1) = GetMinMaxAbsForQuadratic(equation.Derivative, a, b);
+            var (m1, M1) = EquationAnalysis.GetMinMaxAbsFirstDerivative(equation, a, b);
 
             return 2.0 / (m1 + M1);
-        }
-
-        private static (double min, double max) GetMinMaxAbsForQuadratic(Func<double, double> quadFunc, double a, double b)
-        {
-            const double vertexX = -1.0;
-
-            var poinstTocheck = new List<double> { a, b };
-
-            if (a < vertexX && vertexX < b)
-            {
-                poinstTocheck.Add(vertexX);
-            }
-
-            var values = poinstTocheck.Select(p => Math.Abs(quadFunc(p)));
-
-            return (values.Min(), values.Max());
-        }
-
-        private static int EstimateAprioriIterations(IEquation equation, ProblemDefinition problem, double epsilon)
-        {
-            var (m1, M1) = GetMinMaxAbsForQuadratic(equation.Derivative, problem.A, problem.B);
-
-            if (m1 + M1 <= 0)
-            {
-                return -1;
-            }
-
-            double q0 = (M1 - m1) / (M1 + m1);
-
-            if (q0 >= 1 || q0 <= 0)
-            {
-                return -1;
-            }
-
-            double initialError = Math.Max(Math.Abs(problem.RelaxationInitialGuess - problem.A), Math.Abs(problem.RelaxationInitialGuess - problem.B));
-
-            double temp = Math.Log(initialError / epsilon) / Math.Log(1 / q0);
-
-            return (int)Math.Floor(temp) + 1;
         }
     }
 }
