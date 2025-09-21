@@ -10,9 +10,8 @@ namespace NonlinearEquationSolution.Infrastructure.Solvers
 
         public SolverResult Solve(IEquation equation, ProblemDefinition problem, double epsilon)
         {
-            double intialGuess = problem.NewtonInitialGuess;
             string convergenceMessage = CheckConvergenceConditions(equation, problem);
-            double xPrev = intialGuess;
+            double xPrev = problem.NewtonInitialGuess;
 
             int aprioriIterations = EstimateAprioriIterations(equation, problem, epsilon);
 
@@ -21,18 +20,6 @@ namespace NonlinearEquationSolution.Infrastructure.Solvers
             while (iterations < MaxIterations)
             {
                 iterations++;
-
-                //if (equation.Derivative(xPrev) < 1e-12)
-                //{
-                //    return new SolverResult(
-                //        MethodName,
-                //        double.NaN,
-                //        iterations,
-                //        aprioriIterations,  
-                //        epsilon,
-                //        "Derivative too small, method fails"
-                //    );
-                //}
 
                 double xNext = xPrev - equation.Function(xPrev) / equation.Derivative(xPrev);
 
@@ -61,6 +48,7 @@ namespace NonlinearEquationSolution.Infrastructure.Solvers
             );
         }
 
+        // TODO: Fix convergence conditions check for x = -1
         private static string CheckConvergenceConditions(IEquation equation, ProblemDefinition problem)
         {
             var messages = new List<string>();
