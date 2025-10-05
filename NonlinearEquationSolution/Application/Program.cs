@@ -6,7 +6,7 @@ namespace NonlinearEquationSolution.Application
 {
     public static class Program
     {
-        public static void Main(string[] args)
+        public static void Main()
         {
             var configuration = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())

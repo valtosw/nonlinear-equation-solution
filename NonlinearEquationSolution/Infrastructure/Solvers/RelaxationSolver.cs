@@ -46,7 +46,7 @@ namespace NonlinearEquationSolution.Infrastructure.Solvers
                 var sign = Math.Sign(equation.Derivative(xPrev));
                 var xNext = xPrev - sign * tau * equation.Function(xPrev);
 
-                if (Math.Abs(xNext - xPrev) < epsilon)
+                if (Math.Abs(xNext - xPrev) <= epsilon)
                     return (xNext, iterations);
 
                 xPrev = xNext;

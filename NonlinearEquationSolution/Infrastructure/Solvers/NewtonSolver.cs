@@ -54,7 +54,7 @@ namespace NonlinearEquationSolution.Infrastructure.Solvers
                 iterations++;
                 var xNext = xPrev - equation.Function(xPrev) / equation.Derivative(xPrev);
 
-                if (Math.Abs(xNext - xPrev) < epsilon)
+                if (Math.Abs(xNext - xPrev) <= epsilon)
                     return (xNext, iterations);
 
                 xPrev = xNext;
