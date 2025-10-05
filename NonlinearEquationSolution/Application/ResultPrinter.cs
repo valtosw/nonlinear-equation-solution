@@ -6,9 +6,9 @@ namespace NonlinearEquationSolution.Application
     {
         public static void PrintResult(IEnumerable<SolverResult> results)
         {
-            Console.WriteLine("+-------------------+----------------------+------------+--------------------+----------------------------+");
-            Console.WriteLine("| Method            | Found Root           | Iterations | A Priori Estimate  | Comments                   |");
-            Console.WriteLine("+-------------------+----------------------+------------+--------------------+----------------------------+");
+            Console.WriteLine("+-------------------+----------------------+------------+--------------------+-----------------------------------+");
+            Console.WriteLine("| Method            | Found Root           | Iterations | A Priori Estimate  | Comments                          |");
+            Console.WriteLine("+-------------------+----------------------+------------+--------------------+-----------------------------------+");
 
             foreach (var result in results)
             {
@@ -16,7 +16,7 @@ namespace NonlinearEquationSolution.Application
                 Console.WriteLine($"| {result.MethodName,-17} | {result.Root,20:F10} | {result.AposterioriIterations,10} | {aprioriStr,18} | {result.Comments,-26} |");
             }
 
-            Console.WriteLine("+-------------------+----------------------+------------+--------------------+----------------------------+");
+            Console.WriteLine("+-------------------+----------------------+------------+--------------------+-----------------------------------+");
         }
     }
 }
